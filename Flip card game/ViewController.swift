@@ -67,49 +67,35 @@ class ViewController: UIViewController {
                     
                     if matchState.bindCardIdentifier == cards[cardIndex].identifier{
                         //Bingo
-                       
-                        cards[bindingIndex].isMatch = true
-                        cardCollections[bindingIndex].setImage(matchImage, for: .normal)
-                        UIView.transition(with: cardCollections[bindingIndex], duration: 0.5, options: .transitionFlipFromTop, animations: nil, completion: nil)
                         
+                        viewCardChange(for: bindingIndex, withImage: matchImage, transFrom: .transitionFlipFromTop)
+                        cards[bindingIndex].isMatch = true
+                        viewCardChange(for: cardIndex, withImage: matchImage, transFrom: .transitionFlipFromTop)
                         cards[cardIndex].isMatch = true
-                        cardCollections[cardIndex].setImage(matchImage, for: .normal)
-                        UIView.transition(with: cardCollections[cardIndex], duration: 0.5, options: .transitionFlipFromTop, animations: nil, completion: nil)
+                        //                        cardCollections[cardIndex].setImage(matchImage, for: .normal)
+                        //                        UIView.transition(with: cardCollections[cardIndex], duration: 0.5, options: .transitionFlipFromTop, animations: nil, completion: nil)
                     }
                     else{
                          matchState.timeoutHolding = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            self.cardCollections[bindingIndex].setImage(self.backImage, for: .normal)
-                            UIView.transition(with: self.cardCollections[bindingIndex], duration: 0.5, options: .transitionFlipFromLeft, animations: nil, completion: nil)
-                            self.cardCollections[cardIndex].setImage(self.backImage, for: .normal)
-                            UIView.transition(with: self.cardCollections[cardIndex], duration: 0.5, options: .transitionFlipFromLeft, animations: nil, completion: nil)
+                            self.viewCardChange(for: bindingIndex, withImage: self.backImage, transFrom: .transitionFlipFromLeft)
+                            self.viewCardChange(for: cardIndex, withImage: self.backImage, transFrom: .transitionFlipFromLeft)
                             self.matchState.timeoutHolding = false
                         }
                         
                     }
                 }
-                
-                
-                
-                
             }
-//                if(cards[cardIndex].isFaceUp){
-//                    sender.setImage(backImage, for: .normal)
-//                    UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromLeft, animations: nil, completion: nil)
-//                    cards[cardIndex].isFaceUp = false
-//                }
-//                else{
-//                    sender.setImage(cards[cardIndex].cardImage, for: .normal)
-//                    UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromRight, animations: nil, completion: nil)
-//                    cards[cardIndex].isFaceUp = true
-//                }
-            
             
         }
-        //        sender.setImage(UIImage(named: "backcard"), for: .normal)
-//        UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromLeft, animations: nil, completion: nil)
     }
     
+    func viewCardChange (for cardIndex: Int, withImage: UIImage, transFrom: UIViewAnimationOptions){
+       
+        cardCollections[cardIndex].setImage(withImage, for: .normal)
+        UIView.transition(with: cardCollections[cardIndex], duration: 0.5, options: transFrom, animations: nil, completion: nil)
+        
+    }
    
     @IBOutlet weak var temp: UILabel!
     let backImage = UIImage(named: "backcard")!
@@ -137,8 +123,7 @@ class ViewController: UIViewController {
         //將圖案分配給卡片
         for i in cardCollections.indices {
             let btn = cardCollections[i]
-            var card = Card(cardImage: faceChoicedArray[i], identifier: face.index(of: faceChoicedArray[i])! , isMatch: false)
-            //card.backImage = faceChoise[i]
+            let card = Card(cardImage: faceChoicedArray[i], identifier: face.index(of: faceChoicedArray[i])! , isMatch: false)
             
             cards.append(card)
             //btn.setImage(faceChoicedArray[i], for: .normal)
@@ -171,8 +156,9 @@ class ViewController: UIViewController {
         
         for i in cardCollections.indices{
             if !cards[i].isMatch{
-                cardCollections[i].setImage(cards[i].cardImage, for: .normal)
-                UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromRight, animations: nil, completion: nil)
+                //cardCollections[i].setImage(cards[i].cardImage, for: .normal)
+                //UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromRight, animations: nil, completion: nil)
+                viewCardChange(for: i, withImage: cards[i].cardImage, transFrom: .transitionFlipFromRight)
             }
         }
         
