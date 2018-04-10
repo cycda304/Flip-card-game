@@ -11,17 +11,18 @@ import GameplayKit
 
 class ViewController: UIViewController {
 
-    @IBOutlet var cardButtons: [UIButton]!
+    @IBOutlet var cardCollections: [UIButton]!
     @IBOutlet weak var flipCountLabel: UILabel!
     
+    
     let face = [UIImage(named: "01"),UIImage(named: "02"),UIImage(named: "03"),UIImage(named: "04"),UIImage(named: "05"),UIImage(named: "06")]
-    var faceChoise = [UIImage]()
+    var faceChoicedArray = [UIImage]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         gameInit()
-        //print("cardButtons= \(cardButtons[0]) ")
+        
     }
 
    
@@ -31,62 +32,162 @@ class ViewController: UIViewController {
         }
     }
     
-    
-    
+    struct MatchState{
+        var isOnBinding = false
+        var bindCardIdentifier: Int = 0
+        var bindCardCollectionIndex: Int? = nil
+        var timeoutHolding = false
+    }
+    var matchState = MatchState()
     //let numberOfPairsOfCard = cardButtons.count
    
     
     @IBAction func touchCard(_ sender: UIButton) {
-        flipCount += 1
-        if let cardIndex = cardButtons.index(of: sender){
-//            flipCountLabel.text = "\(cardIndex)"
+        
+        if let cardIndex = cardCollections.index(of: sender), !cards[cardIndex].isMatch , !matchState.timeoutHolding{
+        
+            //是否是還沒翻過牌（兩次的第一次）
+            if !matchState.isOnBinding{
+                matchState.isOnBinding = true
+                matchState.bindCardIdentifier = cards[cardIndex].identifier
+                matchState.bindCardCollectionIndex = cardIndex
+                flipCount += 1
+                
+                sender.setImage(cards[cardIndex].cardImage, for: .normal)
+                UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromRight, animations: nil, completion: nil)
+            }
+            else{
+                if let bindingIndex = matchState.bindCardCollectionIndex, bindingIndex != cardIndex{
+                    
+                    matchState.isOnBinding = false
+                    flipCount += 1
+                    //判斷是否相同
+                    sender.setImage(cards[cardIndex].cardImage, for: .normal)
+                    UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromRight, animations: nil, completion: nil)
+                    
+                    if matchState.bindCardIdentifier == cards[cardIndex].identifier{
+                        //Bingo
+                       
+                        cards[bindingIndex].isMatch = true
+                        cardCollections[bindingIndex].setImage(matchImage, for: .normal)
+                        UIView.transition(with: cardCollections[bindingIndex], duration: 0.5, options: .transitionFlipFromTop, animations: nil, completion: nil)
+                        
+                        cards[cardIndex].isMatch = true
+                        cardCollections[cardIndex].setImage(matchImage, for: .normal)
+                        UIView.transition(with: cardCollections[cardIndex], duration: 0.5, options: .transitionFlipFromTop, animations: nil, completion: nil)
+                    }
+                    else{
+                         matchState.timeoutHolding = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            self.cardCollections[bindingIndex].setImage(self.backImage, for: .normal)
+                            UIView.transition(with: self.cardCollections[bindingIndex], duration: 0.5, options: .transitionFlipFromLeft, animations: nil, completion: nil)
+                            self.cardCollections[cardIndex].setImage(self.backImage, for: .normal)
+                            UIView.transition(with: self.cardCollections[cardIndex], duration: 0.5, options: .transitionFlipFromLeft, animations: nil, completion: nil)
+                            self.matchState.timeoutHolding = false
+                        }
+                        
+                    }
+                }
+                
+                
+                
+                
+            }
+//                if(cards[cardIndex].isFaceUp){
+//                    sender.setImage(backImage, for: .normal)
+//                    UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromLeft, animations: nil, completion: nil)
+//                    cards[cardIndex].isFaceUp = false
+//                }
+//                else{
+//                    sender.setImage(cards[cardIndex].cardImage, for: .normal)
+//                    UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromRight, animations: nil, completion: nil)
+//                    cards[cardIndex].isFaceUp = true
+//                }
+            
+            
         }
+        //        sender.setImage(UIImage(named: "backcard"), for: .normal)
+//        UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromLeft, animations: nil, completion: nil)
     }
     
    
     @IBOutlet weak var temp: UILabel!
+    let backImage = UIImage(named: "backcard")!
+    let matchImage = UIImage(named: "ok")!
+    var cards = [Card]()
     
     struct Card{
-        var backImage: UIImage
-        var isFaceUp: Bool
-        //let identifier: Int
-        init(){
-            backImage = UIImage(named: "backcard")!
-            isFaceUp = false
-        }
+        var cardImage: UIImage
+        let identifier: Int
+        var isMatch: Bool
+//        init(){
+//            backImage = UIImage(named: "backcard")!
+//            isFaceUp = false
+//        }
     }
     
     func gameInit (){
         //var cards = Array<Card>()
-        var cards = [Card]()
-        choiseFace()
         
+        faceChoicedArray = [UIImage]()
+        cards = [Card]()
+        choiceFace() //亂數取出圖案
+        matchState.isOnBinding = false //比對歸零
         
-        for i in cardButtons.indices {
-            //print("\(view)")
-            if let btn = cardButtons[i] as? UIButton {
-                var card = Card()
-                card.backImage = faceChoise[i] as! UIImage
-                cards.append(card)
-                btn.setImage(faceChoise[i], for: .normal)
-            }
+        //將圖案分配給卡片
+        for i in cardCollections.indices {
+            let btn = cardCollections[i]
+            var card = Card(cardImage: faceChoicedArray[i], identifier: face.index(of: faceChoicedArray[i])! , isMatch: false)
+            //card.backImage = faceChoise[i]
+            
+            cards.append(card)
+            //btn.setImage(faceChoicedArray[i], for: .normal)
+            btn.setImage(backImage, for: .normal)
         }
-      
+        
+        
     }
     
-    func choiseFace(){
+    //取出目前所有卡片二分之一的圖案
+    func choiceFace(){
         let randomOfnums = GKShuffledDistribution(lowestValue: 0, highestValue: face.count - 1)
-        let numberOfPairsOfCards = Int(cardButtons.count / 2)
+        let numberOfPairsOfCards = Int(cardCollections.count / 2)
         for _ in 0 ..< numberOfPairsOfCards{
             let index = randomOfnums.nextInt()
             if let faceX = face[index]{
-                faceChoise.append(faceX)
-                faceChoise.append(faceX)
+                faceChoicedArray.append(faceX)
+                faceChoicedArray.append(faceX)
             }
         }
-        faceChoise.shuffle()
+        faceChoicedArray.shuffle()
     }
     
+    @IBAction func resetBtn(_ sender: UIButton) {
+        gameInit()
+        flipCount = 0
+    }
+    
+    @IBAction func flipAllCard(_ sender: UIButton) {
+        
+        for i in cardCollections.indices{
+            if !cards[i].isMatch{
+                cardCollections[i].setImage(cards[i].cardImage, for: .normal)
+                UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromRight, animations: nil, completion: nil)
+            }
+        }
+        
+        matchState.timeoutHolding = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            for i in self.cardCollections.indices{
+                if !self.cards[i].isMatch{
+                    self.cardCollections[i].setImage(self.backImage, for: .normal)
+                    UIView.transition(with: sender, duration: 0.5, options: .transitionFlipFromLeft, animations: nil, completion: nil)
+                }
+            }
+            self.matchState.timeoutHolding = false
+        }
+        
+    }
 }
 
 extension Array{
